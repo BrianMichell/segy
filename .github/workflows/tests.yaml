@@ -38,13 +38,13 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install the pinned version of uv
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
-          pyproject-file: ${{ github.workspace }}/pyproject.toml
+          version-file: ${{ github.workspace }}/pyproject.toml
 
       - name: Install Nox
         run: |
@@ -58,13 +58,15 @@ jobs:
         run: |
           import hashlib
           import sys
+          import os
 
           python = "py{}.{}".format(*sys.version_info[:2])
           payload = sys.version.encode() + sys.executable.encode()
           digest = hashlib.sha256(payload).hexdigest()
           result = "${{ runner.os }}-{}-{}-pre-commit".format(python, digest[:8])
 
-          print("::set-output name=result::{}".format(result))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"result={result}\n")
 
       - name: Restore pre-commit cache
         uses: actions/cache@v4
@@ -99,13 +101,13 @@ jobs:
     needs: tests
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install the pinned version of uv
         uses: astral-sh/setup-uv@v6
         with:
           python-version: 3.13
-          pyproject-file: "${{ github.workspace }}/pyproject.toml"
+          version-file: "${{ github.workspace }}/pyproject.toml"
 
       - name: Install Nox
         run: |
@@ -113,7 +115,7 @@ jobs:
           nox --version
 
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: coverage-data-*
           merge-multiple: true
@@ -127,6 +129,6 @@ jobs:
           nox --session=coverage -- xml
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v5.4.2
+        uses: codecov/codecov-action@v5.5.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
