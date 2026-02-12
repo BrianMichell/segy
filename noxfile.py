@@ -264,3 +264,50 @@ def docs(session: Session) -> None:
     session_install_uv_package(session, ["sphinx-autobuild"])
 
     session.run("sphinx-autobuild", *args)
+
+
+@session(python=python_versions[0])
+def benchmark(session: Session) -> None:
+    """Run performance benchmarks against fsspec.
+
+    This session runs I/O performance benchmarks to detect regressions
+    in fsspec behavior. Benchmarks include file opening, sequential reads,
+    random reads, and concurrent I/O tests.
+
+    Usage:
+        nox -s benchmark                              # Run with current fsspec
+        nox -s benchmark -- --fsspec 2026.1.0         # Pin specific fsspec version
+        nox -s benchmark -- --output results.json     # Custom output path
+        nox -s benchmark -- --concurrency-test        # Include concurrent I/O tests
+        nox -s benchmark -- -v                        # Verbose output
+    """
+    session_install_uv(session)
+    session_install_uv_package(session, ["s3fs", "psutil"])
+
+    # Check for fsspec version override in posargs
+    posargs = list(session.posargs)
+    if "--fsspec" in posargs:
+        idx = posargs.index("--fsspec")
+        if idx + 1 < len(posargs):
+            fsspec_version = posargs.pop(idx + 1)
+            posargs.pop(idx)
+            session.install(f"fsspec=={fsspec_version}")
+
+    session.run("python", "benchmarks/fsspec_regression.py", *posargs)
+
+
+@session(name="benchmark-compare", python=python_versions[0])
+def benchmark_compare(session: Session) -> None:
+    """Compare two benchmark result files.
+
+    This session compares benchmark results from two JSON files and
+    highlights any performance regressions that exceed the threshold.
+
+    Usage:
+        nox -s benchmark-compare -- baseline.json current.json
+        nox -s benchmark-compare -- baseline.json current.json --threshold 15
+        nox -s benchmark-compare -- baseline.json current.json --fail-on-regression
+    """
+    session_install_uv(session, install_project=False)
+
+    session.run("python", "benchmarks/compare_results.py", *session.posargs)
