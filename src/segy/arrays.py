@@ -101,7 +101,8 @@ class HeaderArray(SegyArray):
         """Convert structured data to pandas DataFrame."""
         from pandas import DataFrame  # noqa: PLC0415 - Lazy import for fast module init
 
-        return DataFrame.from_records(self)
+        # Indexers squeeze a one-trace read to 0-d. Pandas needs a length.
+        return DataFrame.from_records(np.atleast_1d(self))
 
     def _normalize_and_validate_keys(self, key: str | list[str]) -> str | list[str]:
         if isinstance(key, str):

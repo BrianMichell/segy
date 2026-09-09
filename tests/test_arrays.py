@@ -9,6 +9,21 @@ from segy.exceptions import InvalidFieldError
 from segy.exceptions import NonSpecFieldError
 
 
+def test_header_array_to_dataframe_single_record() -> None:
+    """A squeezed one-trace header must still become a one-row DataFrame."""
+    dtype = np.dtype(
+        {"names": ["source_coord_x", "coordinate_scalar"], "formats": ["i4", "i2"]}
+    )
+    header = HeaderArray(np.array((111, -100), dtype=dtype))
+
+    frame = header.to_dataframe()
+
+    assert list(frame.columns) == ["source_coord_x", "coordinate_scalar"]
+    assert frame.shape == (1, 2)
+    assert frame.loc[0, "source_coord_x"] == 111
+    assert frame.loc[0, "coordinate_scalar"] == -100
+
+
 def test_segy_array_copy() -> None:
     """Test copying a segy array with exact underlying buffer."""
     buffer_expected = np.asarray([0, 1, 2, 3, 4], dtype="uint16").tobytes()

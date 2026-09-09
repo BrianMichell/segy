@@ -33,6 +33,12 @@ class TestTextHeaderSpec:
         assert text_spec.dtype == np.dtype(("uint8", (num_char,)))
         assert text_roundtrip == text
 
+    def test_decode_maps_nul_to_space(self) -> None:
+        """NUL padding must become spaces so CLI / mdio see printable text."""
+        text_spec = TextHeaderSpec(rows=1, cols=5, encoding=TextHeaderEncoding.ASCII)
+
+        assert text_spec.decode(b"ab\x00cd") == "ab cd"
+
     def test_default_encoding_is_ebcdic(self) -> None:
         """Default encoding stays EBCDIC."""
         assert TextHeaderSpec().encoding is TextHeaderEncoding.EBCDIC
